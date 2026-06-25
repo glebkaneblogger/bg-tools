@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B&G Agency — Панель управления</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body { 
+    font-family: 'Inter', sans-serif; 
+    background: #f4f7fe; 
+    min-height: 100vh; 
+    padding: 30px 20px; 
+    color: #1a1f36; 
+  }
+  
+  .container { max-width: 900px; margin: 0 auto; }
+  
+  /* Шапка и Навигация */
+  header { 
+    margin-bottom: 28px; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  header h1 { font-size: 24px; font-weight: 700; color: #1a1f36; letter-spacing: -0.5px; }
+  header h1 span { color: #2563eb; }
+
+  .nav-tabs {
+    display: flex;
+    background: #e4ecfa;
+    padding: 4px;
+    border-radius: 12px;
+    gap: 2px;
+  }
+  .tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7290;
+    cursor: pointer;
+    border-radius: 9px;
+    transition: all 0.15s ease;
+  }
+  .tab-btn:hover { color: #1a1f36; }
+  .tab-btn.active {
+    background: white;
+    color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+  }
+
+  /* Содержимое вкладок */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Общие стили для карточек результатов */
+  .total-card { 
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%); 
+    border-radius: 20px; 
+    padding: 32px 36px; 
+    margin-bottom: 32px; 
+    color: white; 
+    box-shadow: 0 8px 32px rgba(37,99,235,0.25); 
+    position: relative; 
+    overflow: hidden; 
+  }
+  .total-card::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; background:rgba(255,255,255,0.08); border-radius:50%; }
+  .total-card::after  { content:''; position:absolute; bottom:-60px; right:60px; width:220px; height:220px; background:rgba(255,255,255,0.05); border-radius:50%; }
+  .total-label { font-size:12px; font-weight:500; opacity:0.8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
+  .total-value { font-size:44px; font-weight:700; letter-spacing:-1.5px; line-height:1; }
+  .total-value .rub, .total-value span { font-size:22px; font-weight:500; opacity:0.75; margin-left:4px; }
+  
+  .summary-items { margin-top:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.2); display:flex; flex-direction:column; gap:6px; position:relative; z-index:1; }
+  .summary-line { display:flex; justify-content:space-between; font-size:13px; opacity:0.88; }
+  .summary-line strong { font-weight:600; }
+  .empty-hint { font-size:13px; opacity:0.65; text-align:center; padding:4px 0; }
+  
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:768px){ .cols{ grid-template-columns:1fr; } }
+  
+  .col-card, .card { background:white; border-radius:16px; padding:24px; border:1px solid #e8eeff; box-shadow:0 2px 12px rgba(37,99,235,0.06); margin-bottom: 16px; }
+  .col-head, .card-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .col-icon, .card-icon { width:40px; height:40px; border-radius:12px; background:#eff6ff; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  
+  .icon-sites { background: #eff6ff; }
+  .icon-ads   { background: #f0fdf4; }
+  .icon-geo   { background: #fff7ed; }
+  
+  .col-title, .card-title { font-size:16px; font-weight:700; color:#1a1f36; }
+  .col-sub, .card-subtitle   { font-size:12px; color:#9ca3af; margin-top:2px; font-weight: 400; }
+  .card-total { margin-left: auto; font-size: 20px; font-weight: 700; color: #2563eb; }
+  
+  .section-label { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#2563eb; margin:16px 0 8px; }
+  
+  /* Стили для Калькулятора Ассистента */
+  .price-row { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; border:1px solid #e8eeff; background:#fafcff; margin-bottom:7px; cursor:pointer; transition:all 0.15s; user-select:none; }
+  .price-row:hover { background:#f0f6ff; border-color:#c7d5ff; }
+  .price-row.selected { border-color:#2563eb; background:#eff6ff; box-shadow:0 2px 10px rgba(37,99,235,0.1); }
+  .price-row.highlight { border-color:#bfdbfe; background:#f0f7ff; }
+  .price-row.highlight.selected { border-color:#2563eb; background:#dbeafe; }
+  .row-body { flex:1; min-width:0; }
+  .row-name { font-size:13px; font-weight:500; color:#1a1f36; }
+  .row-note { font-size:11px; color:#9ca3af; margin-top:1px; }
+  .row-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .price-col { display:flex; flex-direction:column; align-items:flex-end; }
+  .price-tag { font-size:13px; font-weight:600; background:#f0f4ff; padding:3px 10px; border-radius:99px; border:1px solid #e8eeff; white-space:nowrap; color:#1a1f36; }
+  .price-row.selected .price-tag { background:white; border-color:#bfdbfe; }
+  .unit-note { font-size:10px; color:#9ca3af; margin-top:2px; }
+  .qty-ctrl { display:none; align-items:center; gap:5px; }
+  .qty-ctrl.visible { display:flex; }
+  .qty-btn { width:24px; height:24px; border-radius:50%; border:1px solid #e8eeff; background:white; color:#2563eb; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:500; transition:background 0.12s; }
+  .qty-btn:hover { background:#eff6ff; }
+  .qty-val { font-size:13px; font-weight:600; min-width:16px; text-align:center; color:#1a1f36; }
+  .reset-btn { margin-top:8px; width:100%; padding:11px; font-size:13px; font-family:'Inter',sans-serif; font-weight:500; color:#6b7290; background:white; border:1px solid #e8eeff; border-radius:10px; cursor:pointer; transition:all 0.12s; }
+  .reset-btn:hover { background:#f0f4ff; color:#2563eb; }
+
+  /* Стили для Калькулятора Оборота */
+  .agency-row { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .agency-row:last-child { margin-bottom: 0; }
+  .agency-row-label { font-size: 13px; color: #4b5563; font-weight: 500; width: 140px; flex-shrink: 0; }
+  .slider-wrap { flex: 1; position: relative; }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 4px; background: #e8eeff; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #2563eb; border: 2px solid white; box-shadow: 0 2px 6px rgba(37,99,235,0.35); cursor: pointer; transition: transform 0.15s; }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  .agency-row-value { font-size: 14px; font-weight: 600; color: #1a1f36; width: 90px; text-align: right; flex-shrink: 0; }
+  .breakdown { display: flex; flex-direction: column; gap: 6px; text-align: right; z-index: 1; }
+  .breakdown-item { font-size: 13px; opacity: 0.85; font-weight: 400; }
+  .breakdown-item strong { font-weight: 600; }
+
+  /* Стили для ссылок (Вкладки «Сервисы» и «База ИИ») */
+  .links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .link-card { background: white; border: 1px solid #e8eeff; border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; transition: all 0.15s ease; box-shadow: 0 2px 8px rgba(37,99,235,0.04); }
+  .link-card:hover { border-color: #2563eb; background: #fdfdfe; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,0.08); }
+  .link-avatar { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .link-info { flex: 1; min-width: 0; }
+  .link-title { font-size: 14px; font-weight: 600; color: #1a1f36; }
+  .link-desc { font-size: 11px; color: #9ca3af; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .link-arrow { font-size: 12px; color: #cbd5e1; transition: color 0.15s; }
+  .link-card:hover .link-arrow { color: #2563eb; }
+</style>
+</head>
+<body>
+<div class="container">
+  
+  <header>
+    <h1>B&G <span>Workspace</span></h1>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('asst-calc')">Доход ассистента</button>
+      <button class="tab-btn" onclick="switchTab('agency-calc')">Оборот агентства</button>
+      <button class="tab-btn" onclick="switchTab('services')">Наши сервисы</button>
+      <button class="tab-btn" onclick="switchTab('ai-base')">База ИИ</button>
+    </div>
+  </header>
+
+  <!-- ВКЛАДКА 1: Калькулятор ассистента -->
+  <div id="tab-asst-calc" class="tab-content active">
+    <div class="total-card">
+      <div class="total-label">Итого ассистенту за период</div>
+      <div class="total-value" id="asstTotalDisplay">0 <span class="rub">₽</span></div>
+      <div class="summary-items" id="asstSummaryItems">
+        <div class="empty-hint">Нажмите на задачи ниже, чтобы добавить в расчёт</div>
+      </div>
+    </div>
+    
+    <div class="cols">
+      <!-- SMM -->
+      <div class="col-card">
+        <div class="col-head">
+          <div class="col-icon">🎬</div>
+          <div><div class="col-title">SMM-ассистент</div><div class="col-sub">Видеомонтаж и ведение соцсетей</div></div>
+        </div>
+        <div class="section-label">Видеомонтаж</div>
+        <div class="price-row" id="asst-row-0" onclick="toggleAsstRow(0)">
+          <div class="row-body"><div class="row-name">Reels / Shorts из готового материала</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">300–500 ₽</span><span class="unit-note">/ видео</span></div>
+            <div class="qty-ctrl" id="asst-qty-0"><button class="qty-btn" onclick="changeAsstQty(event,0,-1)">−</button><span class="qty-val" id="asst-qval-0">1</span><button class="qty-btn" onclick="changeAsstQty(event,0,1)">+</button></div>
+          </div>
+        </div>
+        <div class="price-row" id="asst-row-1" onclick="toggleAsstRow(1)">
+          <div class="row-body"><div class="row-name">Съёмка видео</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">300–500 ₽</span><span class="unit-note">/ видео</span></div>
+            <div class="qty-ctrl" id="asst-qty-1"><button class="qty-btn" onclick="changeAsstQty(event,1,-1)">−</button><span class="qty-val" id="asst-qval-1">1</span><button class="qty-btn" onclick="changeAsstQty(event,1,1)">+</button></div>
+          </div>
+        </div>
+        <div class="price-row" id="asst-row-2" onclick="toggleAsstRow(2)">
+          <div class="row-body"><div class="row-name">Обложка для видео</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">50 ₽</span><span class="unit-note">/ видео</span></div>
+            <div class="qty-ctrl" id="asst-qty-2"><button class="qty-btn" onclick="changeAsstQty(event,2,-1)">−</button><span class="qty-val" id="asst-qval-2">1</span><button class="qty-btn" onclick="changeAsstQty(event,2,1)">+</button></div>
+          </div>
+        </div>
+        <div class="section-label">Остальные услуги</div>
+        <div class="price-row" id="asst-row-3" onclick="toggleAsstRow(3)">
+          <div class="row-body"><div class="row-name">Поиск референсов</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">500 ₽</span><span class="unit-note">/ неделю</span></div>
+            <div class="qty-ctrl" id="asst-qty-3"><button class="qty-btn" onclick="changeAsstQty(event,3,-1)">−</button><span class="qty-val" id="asst-qval-3">1</span><button class="qty-btn" onclick="changeAsstQty(event,3,1)">+</button></div>
+          </div>
+        </div>
+        <div class="price-row" id="asst-row-4" onclick="toggleAsstRow(4)">
+          <div class="row-body"><div class="row-name">Помощь с контент-планом</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">1 500 ₽</span><span class="unit-note">/ мес</span></div>
+            <div class="qty-ctrl" id="asst-qty-4"><button class="qty-btn" onclick="changeAsstQty(event,4,-1)">−</button><span class="qty-val" id="asst-qval-4">1</span><button class="qty-btn" onclick="changeAsstQty(event,4,1)">+</button></div>
+          </div>
+        </div>
+        <div class="price-row" id="asst-row-5" onclick="toggleAsstRow(5)">
+          <div class="row-body"><div class="row-name">Кросспостинг</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">150 ₽</span><span class="unit-note">/ пост</span></div>
+            <div class="qty-ctrl" id="asst-qty-5"><button class="qty-btn" onclick="changeAsstQty(event,5,-1)">−</button><span class="qty-val" id="asst-qval-5">1</span><button class="qty-btn" onclick="changeAsstQty(event,5,1)">+</button></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ВЕБ -->
+      <div class="col-card">
+        <div class="col-head">
+          <div class="col-icon">🌐</div>
+          <div><div class="col-title">Веб-ассистент</div><div class="col-sub">Разработка и сопровождение сайтов</div></div>
+        </div>
+        <div class="section-label">Контент</div>
+        <div class="price-row" id="asst-row-6" onclick="toggleAsstRow(6)">
+          <div class="row-body"><div class="row-name">Подготовка материалов</div><div class="row-note">Сбор фото/видео, оптимизация, юр. документы</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">500–800 ₽</span></div>
+            <div class="qty-ctrl" id="asst-qty-6"><button class="qty-btn" onclick="changeAsstQty(event,6,-1)">−</button><span class="qty-val" id="asst-qval-6">1</span><button class="qty-btn" onclick="changeAsstQty(event,6,1)">+</button></div>
+          </div>
+        </div>
+        <div class="section-label">Аналитика</div>
+        <div class="price-row" id="asst-row-7" onclick="toggleAsstRow(7)">
+          <div class="row-body"><div class="row-name">Анализ ЦА и конкурентов</div><div class="row-note">Таблица конкурентов, мудборд</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">600–1 000 ₽</span></div>
+            <div class="qty-ctrl" id="asst-qty-7"><button class="qty-btn" onclick="changeAsstQty(event,7,-1)">−</button><span class="qty-val" id="asst-qval-7">1</span><button class="qty-btn" onclick="changeAsstQty(event,7,1)">+</button></div>
+          </div>
+        </div>
+        <div class="section-label">Техника</div>
+        <div class="price-row" id="asst-row-8" onclick="toggleAsstRow(8)">
+          <div class="row-body"><div class="row-name">Выбор домена</div><div class="row-note">Подбор вариантов, проверка доступности</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">100 ₽</span></div>
+            <div class="qty-ctrl" id="asst-qty-8"><button class="qty-btn" onclick="changeAsstQty(event,8,-1)">−</button><span class="qty-val" id="asst-qval-8">1</span><button class="qty-btn" onclick="changeAsstQty(event,8,1)">+</button></div>
+          </div>
+        </div>
+        <div class="price-row" id="asst-row-9" onclick="toggleAsstRow(9)">
+          <div class="row-body"><div class="row-name">Настройка Яндекс.Метрики</div><div class="row-note">Установка счётчика, проверка сбора данных</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">250 ₽</span></div>
+            <div class="qty-ctrl" id="asst-qty-9"><button class="qty-btn" onclick="changeAsstQty(event,9,-1)">−</button><span class="qty-val" id="asst-qval-9">1</span><button class="qty-btn" onclick="changeAsstQty(event,9,1)">+</button></div>
+          </div>
+        </div>
+        <div class="section-label">SEO</div>
+        <div class="price-row" id="asst-row-10" onclick="toggleAsstRow(10)">
+          <div class="row-body"><div class="row-name">SEO-семантика и настройка</div><div class="row-note">Сбор семантики, мета-теги, Яндекс.Вебмастер, GSC</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">700–1 000 ₽</span></div>
+            <div class="qty-ctrl" id="asst-qty-10"><button class="qty-btn" onclick="changeAsstQty(event,10,-1)">−</button><span class="qty-val" id="asst-qval-10">1</span><button class="qty-btn" onclick="changeAsstQty(event,10,1)">+</button></div>
+          </div>
+        </div>
+        <div class="section-label">Финал</div>
+        <div class="price-row" id="asst-row-11" onclick="toggleAsstRow(11)">
+          <div class="row-body"><div class="row-name">Передача проекта клиенту</div><div class="row-note">Файл доступов, инструктаж, передача аналитики</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">300 ₽</span></div>
+            <div class="qty-ctrl" id="asst-qty-11"><button class="qty-btn" onclick="changeAsstQty(event,11,-1)">−</button><span class="qty-val" id="asst-qval-11">1</span><button class="qty-btn" onclick="changeAsstQty(event,11,1)">+</button></div>
+          </div>
+        </div>
+        <div class="section-label">Полный цикл</div>
+        <div class="price-row highlight" id="asst-row-12" onclick="toggleAsstRow(12)">
+          <div class="row-body"><div class="row-name">Полный проект (все задачи ассистента)</div><div class="row-note">При участии на всех этапах одного проекта</div></div>
+          <div class="row-right">
+            <div class="price-col"><span class="price-tag">2 500–4 000 ₽</span></div>
+            <div class="qty-ctrl" id="asst-qty-12"><button class="qty-btn" onclick="changeAsstQty(event,12,-1)">−</button><span class="qty-val" id="asst-qval-12">1</span><button class="qty-btn" onclick="changeAsstQty(event,12,1)">+</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="reset-btn" onclick="resetAsstAll()">Сбросить всё</button>
+  </div>
+
+  <!-- ВКЛАДКА 2: Калькулятор оборота агентства -->
+  <div id="tab-agency-calc" class="tab-content">
+    <div class="total-card">
+      <div>
+        <div class="total-label">Общий оборот агентства в месяц</div>
+        <div class="total-value" id="agencyTotalDisplay">0 <span>₽</span></div>
+      </div>
+      <div class="breakdown" id="agencyBreakdown"></div>
+    </div>
+
+    <div class="sections">
+      <!-- Сайты -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon icon-sites">🖥</div>
+          <div>
+            <div class="card-title">Разработка сайтов</div>
+            <div class="card-subtitle">Количество × Стоимость под ключ</div>
+          </div>
+          <div class="card-total" id="sites-total">0 ₽</div>
+        </div>
+        <div class="agency-row">
+          <div class="agency-row-label">Кол-во сайтов</div>
+          <div class="slider-wrap">
+            <input type="range" id="sitesCount" min="1" max="8" value="2" step="1">
+          </div>
+          <div class="agency-row-value" id="sitesCountVal">2 шт</div>
+        </div>
+        <div class="agency-row">
+          <div class="agency-row-label">Цена за сайт</div>
+          <div class="slider-wrap">
+            <input type="range" id="sitesPrice" min="30000" max="200000" value="70000" step="5000">
+          </div>
+          <div class="agency-row-value" id="sitesPriceVal">70 000 ₽</div>
+        </div>
+      </div>
+
+      <!-- Реклама -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon icon-ads">📣</div>
+          <div>
+            <div class="card-title">Настройка рекламы</div>
+            <div class="card-subtitle">Яндекс.Директ / VK Реклама</div>
+          </div>
+          <div class="card-total" id="ads-total">0 ₽</div>
+        </div>
+        <div class="agency-row">
+          <div class="agency-row-label">Кол-во кампаний</div>
+          <div class="slider-wrap">
+            <input type="range" id="adsCount" min="0" max="10" value="3" step="1">
+          </div>
+          <div class="agency-row-value" id="adsCountVal">3 шт</div>
+        </div>
+        <div class="agency-row">
+          <div class="agency-row-label">Цена кампании</div>
+          <div class="slider-wrap">
+            <input type="range" id="adsPrice" min="3000" max="30000" value="7000" step="1000">
+          </div>
+          <div class="agency-row-value" id="adsPriceVal">7 000 ₽</div>
+        </div>
+      </div>
+
+      <!-- Геоточки -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon icon-geo">📍</div>
+          <div>
+            <div class="card-title">Локальный маркетинг (Геоточки)</div>
+            <div class="card-subtitle">Яндекс.Карты / 2ГИС</div>
+          </div>
+          <div class="card-total" id="geo-total">0 ₽</div>
+        </div>
+        <div class="agency-row">
+          <div class="agency-row-label">Кол-во клиентов</div>
+          <div class="slider-wrap">
+            <input type="range" id="geoCount" min="0" max="15" value="4" step="1">
+          </div>
+          <div class="agency-row-value" id="geoCountVal">4 шт</div>
+        </div>
+        <div class="agency-row">
+          <div class="agency-row-label">Цена за клиента</div>
+          <div class="slider-wrap">
+            <input type="range" id="geoPrice" min="5000" max="50000" value="15000" step="1000">
+          </div>
+          <div class="agency-row-value" id="geoPriceVal">15 000 ₽</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 3: Наше приложение (Ссылки на сервисы) -->
+  <div id="tab-services" class="tab-content">
+    <div style="margin-bottom:20px;">
+      <h2 style="font-size:18px; font-weight:600;">Быстрый доступ к сервисам</h2>
+      <p style="font-size:13px; color:#6b7290; margin-top:2px;">Все внутренние инструменты и платформы агентства</p>
+    </div>
+    
+    <div class="links-grid">
+      <!-- 1. Miro -->
+      <a href="https://miro.com/app/dashboard/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#eff6ff; color:#2563eb;">🗺️</div>
+        <div class="link-info">
+          <div class="link-title">Miro Dashboard</div>
+          <div class="link-desc">Интерактивные доски и карты проектов</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 2. Notion -->
+      <a href="https://app.notion.com/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#f8fafc; color:#1e293b;">📝</div>
+        <div class="link-info">
+          <div class="link-title">Notion</div>
+          <div class="link-desc">База знаний, регламенты и задачи</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 3. Legal Checkup -->
+      <a href="https://legal-checkup.vercel.app/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fff7ed; color:#ea580c;">⚖️</div>
+        <div class="link-info">
+          <div class="link-title">Legal Checkup</div>
+          <div class="link-desc">Проверка юридических документов</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 4. Figma -->
+      <a href="https://www.figma.com/files/team/1650865292260561496/recents-and-sharing?fuid=1650865290870864354" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fbf2ff; color:#a855f7;">🎨</div>
+        <div class="link-info">
+          <div class="link-title">Figma Team</div>
+          <div class="link-desc">Недавние файлы и UI/UX прототипы</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 5. PhotoRoom -->
+      <a href="https://app.photoroom.com/create" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fff1f2; color:#f43f5e;">📸</div>
+        <div class="link-info">
+          <div class="link-title">PhotoRoom</div>
+          <div class="link-desc">Быстрое удаление фона и обработка фото</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 6. Design Style Navigator -->
+      <a href="https://design-style-navigator.vercel.app/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#f0fdf4; color:#16a34a;">🧭</div>
+        <div class="link-info">
+          <div class="link-title">Style Navigator</div>
+          <div class="link-desc">Навигатор дизайн-стилей сайтов</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 7. Pinterest -->
+      <a href="https://ru.pinterest.com/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fff1f2; color:#dc2626;">📌</div>
+        <div class="link-info">
+          <div class="link-title">Pinterest</div>
+          <div class="link-desc">Поиск референсов и визуальных идей</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 8. Squoosh -->
+      <a href="https://squoosh.app/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fefce8; color:#ca8a04;">🖼️</div>
+        <div class="link-info">
+          <div class="link-title">Squoosh</div>
+          <div class="link-desc">Оптимизация и сжатие картинок для web</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 9. Draw.io -->
+      <a href="https://www.drawio.com/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#ecfeff; color:#0891b2;">📐</div>
+        <div class="link-info">
+          <div class="link-title">Draw.io</div>
+          <div class="link-desc">Построение блок-схем и архитектуры</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 10. Яндекс Вебмастер -->
+      <a href="https://webmaster.yandex.ru/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#f8fafc; color:#475569;">🕵️‍♂️</div>
+        <div class="link-info">
+          <div class="link-title">Яндекс Вебмастер</div>
+          <div class="link-desc">Контроль индексации и диагностика SEO</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 11. Яндекс Вордстат -->
+      <a href="https://wordstat.yandex.ru/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#faf5ff; color:#7c3aed;">🔍</div>
+        <div class="link-info">
+          <div class="link-title">Яндекс Вордстат</div>
+          <div class="link-desc">Анализ поискового спроса и семантики</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 12. Яндекс Метрика -->
+      <a href="https://metrika.yandex.ru/list?period=today&group=dekaminute" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#f0fdf4; color:#22c55e;">📈</div>
+        <div class="link-info">
+          <div class="link-title">Яндекс Метрика</div>
+          <div class="link-desc">Аналитика, трафик и вебвизор (Сегодня)</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 4: База ИИ -->
+  <div id="tab-ai-base" class="tab-content">
+    <div style="margin-bottom:20px;">
+      <h2 style="font-size:18px; font-weight:600;">Рабочие инструменты ИИ</h2>
+      <p style="font-size:13px; color:#6b7290; margin-top:2px;">Быстрый доступ к нейросетям и кастомным ассистентам</p>
+    </div>
+
+    <div class="links-grid">
+      <!-- 1. ChatGPT -->
+      <a href="https://chatgpt.com/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#f0fdf4; color:#16a34a;">🤖</div>
+        <div class="link-info">
+          <div class="link-title">ChatGPT</div>
+          <div class="link-desc">Генерация идей, тексты, код и общие задачи</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 2. Google Gemini -->
+      <a href="https://gemini.google.com/u/5/search" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#eff6ff; color:#2563eb;">✨</div>
+        <div class="link-info">
+          <div class="link-title">Google Gemini</div>
+          <div class="link-desc">Работа с информацией, веб-поиск и таблицы</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 3. Claude AI -->
+      <a href="https://claude.ai/new" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fff7ed; color:#ea580c;">🎭</div>
+        <div class="link-info">
+          <div class="link-title">Claude AI</div>
+          <div class="link-desc">Сложная аналитика, редактура и логика</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 4. Улучшатель Райт -->
+      <a href="https://chatgpt.com/g/g-68a38fb191b081918f4984b1a9261f02-uluchshatel-rait" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fbf2ff; color:#a855f7;">✍️</div>
+        <div class="link-info">
+          <div class="link-title">Улучшатель Райт</div>
+          <div class="link-desc">Кастомный GPT для качественного копирайтинга</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 5. SurgayGPT -->
+      <a href="https://surgaygpt.ru/target-audience" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fff1f2; color:#f43f5e;">🎯</div>
+        <div class="link-info">
+          <div class="link-title">SurgayGPT (ЦА)</div>
+          <div class="link-desc">Специализированный анализ целевой аудитории</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 6. DeepSeek -->
+      <a href="https://chat.deepseek.com/" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#ecfeff; color:#0891b2;">🐳</div>
+        <div class="link-info">
+          <div class="link-title">DeepSeek</div>
+          <div class="link-desc">Глубокие математические и логические рассуждения</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 7. NotebookLM -->
+      <a href="https://notebooklm.google.com/?icid=home_maincta&_gl=1*ui3s3x*_ga*MTA4Mjc2ODI0OC4xNzYyMDg5MjY2*_ga_W0LDH41ZCB*czE3NjkxNTkxNTgkbzUkZzEkdDE3NjkxNTkxNjEkajU3JGwwJGgw&authuser=5&pageId=none" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#f8fafc; color:#475569;">📓</div>
+        <div class="link-info">
+          <div class="link-title">NotebookLM</div>
+          <div class="link-desc">Интеллектуальный блокнот на основе ваших баз</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+
+      <!-- 8. Google AI Studio -->
+      <a href="https://aistudio.google.com/u/5/?pli=1" target="_blank" class="link-card">
+        <div class="link-avatar" style="background:#fefce8; color:#ca8a04;">🛠️</div>
+        <div class="link-info">
+          <div class="link-title">Google AI Studio</div>
+          <div class="link-desc">Инструменты разработки и прямое API моделей</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================= ЛОГИКА ТАБОВ ================= */
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  
+  const eventTarget = event.currentTarget;
+  if(eventTarget) eventTarget.classList.add('active');
+  
+  const targetContent = document.getElementById('tab-' + tabId);
+  targetContent.classList.add('active');
+  
+  if(tabId === 'agency-calc') {
+    updateAgency();
+  }
+}
+
+/* ================= ЛОГИКА: КАЛЬКУЛЯТОР АССИСТЕНТА ================= */
+const ASST_TOTAL = 13;
+const asstItems = [
+  {name:"Reels / Shorts из готового", min:300, max:500},
+  {name:"Съёмка видео", min:300, max:500},
+  {name:"Обложка для видео", min:50, max:50},
+  {name:"Поиск референсов", min:500, max:500},
+  {name:"Помощь с контент-планом", min:1500, max:1500},
+  {name:"Кросспостинг", min:150, max:150},
+  {name:"Подготовка материалов", min:500, max:800},
+  {name:"Анализ ЦА и конкурентов", min:600, max:1000},
+  {name:"Выбор домена", min:100, max:100},
+  {name:"Настройка Яндекс.Метрики", min:250, max:250},
+  {name:"SEO-семантика и настройка", min:700, max:1000},
+  {name:"Передача проекта клиенту", min:300, max:300},
+  {name:"Полный проект", min:2500, max:4000},
+];
+const asstSelected = new Array(ASST_TOTAL).fill(false);
+const asstQty = new Array(ASST_TOTAL).fill(1);
+
+function fmtPrice(n) { return n.toLocaleString("ru-RU"); }
+
+function toggleAsstRow(i) {
+  asstSelected[i] = !asstSelected[i];
+  document.getElementById("asst-row-" + i).classList.toggle("selected", asstSelected[i]);
+  const qc = document.getElementById("asst-qty-" + i);
+  if (asstSelected[i]) {
+    qc.classList.add("visible");
+  } else {
+    qc.classList.remove("visible");
+    asstQty[i] = 1;
+    document.getElementById("asst-qval-" + i).textContent = "1";
+  }
+  recalcAsst();
+}
+
+function changeAsstQty(e, i, delta) {
+  e.stopPropagation();
+  asstQty[i] = Math.max(1, asstQty[i] + delta);
+  document.getElementById("asst-qval-" + i).textContent = asstQty[i];
+  recalcAsst();
+}
+
+function recalcAsst() {
+  let minT = 0, maxT = 0; const lines = [];
+  for (let i = 0; i < ASST_TOTAL; i++) {
+    if (!asstSelected[i]) continue;
+    const q = asstQty[i], mn = asstItems[i].min * q, mx = asstItems[i].max * q;
+    minT += mn; maxT += mx;
+    const label = asstItems[i].name + (q > 1 ? " × " + q : "");
+    const val = mn === mx ? fmtPrice(mn) + " ₽" : fmtPrice(mn) + "–" + fmtPrice(mx) + " ₽";
+    lines.push({label, val});
+  }
+  const sumEl = document.getElementById("asstSummaryItems");
+  const totEl = document.getElementById("asstTotalDisplay");
+  if (!lines.length) {
+    sumEl.innerHTML = '<div class="empty-hint">Нажмите на задачи ниже, чтобы добавить в расчёт</div>';
+    totEl.innerHTML = '0 <span class="rub">₽</span>'; return;
+  }
+  sumEl.innerHTML = lines.map(l => `<div class="summary-line"><span>${l.label}</span><strong>${l.val}</strong></div>`).join("");
+  const totStr = minT === maxT ? fmtPrice(minT) + ' <span class="rub">₽</span>' : fmtPrice(minT) + "–" + fmtPrice(maxT) + ' <span class="rub">₽</span>';
+  totEl.innerHTML = totStr;
+}
+
+function resetAsstAll() {
+  for (let i = 0; i < ASST_TOTAL; i++) {
+    asstSelected[i] = false; asstQty[i] = 1;
+    document.getElementById("asst-row-" + i)?.classList.remove("selected");
+    document.getElementById("asst-qty-" + i)?.classList.remove("visible");
+    const qv = document.getElementById("asst-qval-" + i); if (qv) qv.textContent = "1";
+  }
+  recalcAsst();
+}
+
+
+/* ================= ЛОГИКА: КАЛЬКУЛЯТОР ОБОРОТА ================= */
+function fmtAgencyCurrency(n) {
+  return n.toLocaleString('ru-RU') + ' ₽';
+}
+
+function updateAgency() {
+  const sitesCount = +document.getElementById('sitesCount').value;
+  const sitesPrice = +document.getElementById('sitesPrice').value;
+  const adsCount   = +document.getElementById('adsCount').value;
+  const adsPrice   = +document.getElementById('adsPrice').value;
+  const geoCount   = +document.getElementById('geoCount').value;
+  const geoPrice   = +document.getElementById('geoPrice').value;
+
+  const sites = sitesCount * sitesPrice;
+  const ads   = adsCount * adsPrice;
+  const geo   = geoCount * geoPrice;
+  const total = sites + ads + geo;
+
+  document.getElementById('sitesCountVal').textContent = sitesCount + ' шт';
+  document.getElementById('sitesPriceVal').textContent = sitesPrice.toLocaleString('ru-RU') + ' ₽';
+  document.getElementById('adsCountVal').textContent   = adsCount + ' шт';
+  document.getElementById('adsPriceVal').textContent   = adsPrice.toLocaleString('ru-RU') + ' ₽';
+  document.getElementById('geoCountVal').textContent   = geoCount + ' шт';
+  document.getElementById('geoPriceVal').textContent   = geoPrice.toLocaleString('ru-RU') + ' ₽';
+
+  document.getElementById('sites-total').textContent = fmtAgencyCurrency(sites);
+  document.getElementById('ads-total').textContent   = fmtAgencyCurrency(ads);
+  document.getElementById('geo-total').textContent   = fmtAgencyCurrency(geo);
+
+  const totalEl = document.getElementById('agencyTotalDisplay');
+  totalEl.innerHTML = total.toLocaleString('ru-RU') + ' <span>₽</span>';
+
+  document.getElementById('agencyBreakdown').innerHTML = `
+    <div class="breakdown-item">Сайты&nbsp;&nbsp;<strong>${fmtAgencyCurrency(sites)}</strong></div>
+    <div class="breakdown-item">Реклама&nbsp;&nbsp;<strong>${fmtAgencyCurrency(ads)}</strong></div>
+    <div class="breakdown-item">Геоточки&nbsp;&nbsp;<strong>${fmtAgencyCurrency(geo)}</strong></div>
+  `;
+
+  const sliders = document.querySelectorAll('#tab-agency-calc input[type=range]');
+  sliders.forEach(s => {
+    const min = +s.min, max = +s.max, val = +s.value;
+    const pct = ((val - min) / (max - min)) * 100;
+    s.style.background = `linear-gradient(to right, #2563eb ${pct}%, #e8eeff ${pct}%)`;
+  });
+}
+
+document.querySelectorAll('#tab-agency-calc input[type=range]').forEach(s => {
+  s.addEventListener('input', updateAgency);
+});
+
+updateAgency();
+</script>
+</body>
+</html>
