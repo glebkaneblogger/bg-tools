@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Генератор юридических документов</title>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<style>
+  /* Минималистичный Apple-like дизайн */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  
+  :root {
+    --bg-color: #f5f5f7;
+    --card-bg: #ffffff;
+    --text-main: #1d1d1f;
+    --text-sec: #86868b;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --border: #d2d2d7;
+    --radius-card: 20px;
+    --radius-input: 12px;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg-color); color: var(--text-main); line-height: 1.5; -webkit-font-smoothing: antialiased; padding-bottom: 60px; }
+
+  .container { max-width: 640px; margin: 60px auto 0; padding: 0 20px; }
+  
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .header p { color: var(--text-sec); font-size: 15px; }
+
+  .progress { height: 4px; background: #e5e5ea; border-radius: 4px; margin-bottom: 30px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s ease; }
+
+  .step-card { background: var(--card-bg); border-radius: var(--radius-card); padding: 32px; box-shadow: var(--shadow); display: none; animation: fadeUp 0.4s ease forwards; }
+  .step-card.active { display: block; }
+  
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  h2 { font-size: 20px; font-weight: 600; margin-bottom: 24px; letter-spacing: -0.3px; }
+
+  .form-group { margin-bottom: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  input[type="text"], input[type="email"], input[type="date"], textarea, select {
+    width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-input);
+    font-size: 15px; font-family: inherit; background: var(--card-bg); color: var(--text-main); transition: all 0.2s; outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1); }
+  textarea { resize: vertical; min-height: 90px; }
+
+  /* Checkboxes (Toggle style) */
+  .checkbox-grid { display: grid; gap: 12px; }
+  .checkbox-item { display: flex; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-input); cursor: pointer; transition: all 0.2s; }
+  .checkbox-item:hover { background: #f9f9fb; }
+  .checkbox-item input { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .checkbox-item.checked { border-color: var(--accent); background: rgba(0, 113, 227, 0.03); }
+  .checkbox-item span { font-size: 15px; font-weight: 500; }
+
+  /* Buttons */
+  .actions { display: flex; justify-content: space-between; margin-top: 32px; gap: 16px; }
+  button { font-family: inherit; font-size: 15px; font-weight: 500; border-radius: 99px; cursor: pointer; transition: all 0.2s; border: none; }
+  .btn-prev { padding: 14px 24px; background: #e5e5ea; color: var(--text-main); }
+  .btn-prev:hover { background: #d1d1d6; }
+  .btn-next { padding: 14px 32px; background: var(--accent); color: #fff; margin-left: auto; }
+  .btn-next:hover { background: var(--accent-hover); transform: scale(1.02); }
+  
+  .btn-download { width: 100%; padding: 16px; margin-bottom: 12px; background: var(--text-main); color: #fff; font-weight: 600; border-radius: 14px; }
+  .btn-download:hover { background: #000; transform: scale(1.01); }
+  .btn-download.primary { background: var(--accent); }
+  .btn-download.primary:hover { background: var(--accent-hover); }
+  
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 99px; font-size: 14px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; }
+  .toast.show { opacity: 1; }
+
+  @media(max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Документы для сайта</h1>
+    <p>Генератор юридически чистых оферт и политик</p>
+  </div>
+
+  <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+
+  <div class="step-card active" id="step-1">
+    <h2>1. Юридическое лицо</h2>
+    
+    <div class="form-group">
+      <label>Полное наименование (Кто владелец?)</label>
+      <input type="text" id="d_name" placeholder="ИП Иванов Иван Иванович">
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>ИНН</label>
+        <input type="text" id="d_inn" placeholder="123456789012">
+      </div>
+      <div class="form-group">
+        <label>ОГРН / ОГРНИП</label>
+        <input type="text" id="d_ogrn" placeholder="315774600123456">
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label>Юридический адрес регистрации</label>
+      <input type="text" id="d_address" placeholder="Индекс, г. Город, ул. Улица, д. 1">
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>E-mail для запросов</label>
+        <input type="email" id="d_email" placeholder="info@site.ru">
+      </div>
+      <div class="form-group">
+        <label>Телефон (Опционально)</label>
+        <input type="text" id="d_phone" placeholder="+7 999 000 00 00">
+      </div>
+    </div>
+
+    <div class="actions">
+      <div></div>
+      <button class="btn-next" onclick="nextStep(2)">Далее</button>
+    </div>
+  </div>
+
+  <div class="step-card" id="step-2">
+    <h2>2. О проекте</h2>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>Домен сайта</label>
+        <input type="text" id="d_url" placeholder="example.ru">
+      </div>
+      <div class="form-group">
+        <label>Дата документов</label>
+        <input type="date" id="d_date">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Услуги (что делает сайт?)</label>
+      <textarea id="d_offer" placeholder="Например: разработка веб-сайтов, настройка контекстной рекламы и SEO-оптимизация"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Функционал сайта</label>
+      <div class="checkbox-grid">
+        <label class="checkbox-item">
+          <input type="checkbox" id="c_forms" checked>
+          <span>Формы обратной связи (сбор лидов)</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="c_account">
+          <span>Регистрация / Личный кабинет</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="c_payments" onchange="togglePayments()">
+          <span>Прием онлайн-платежей</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="payment-block" style="display: none; padding-top: 10px;">
+      <div class="form-group">
+        <label>Платежная система</label>
+        <input type="text" id="d_gateway" placeholder="Например: ЮKassa, Тинькофф, Банковские карты">
+      </div>
+      <div class="form-group">
+        <label>Тип возврата средств</label>
+        <select id="d_refund">
+          <option value="Возврат средств осуществляется в соответствии с Законом РФ «О защите прав потребителей».">Физические товары/услуги (по закону)</option>
+          <option value="Возврат за цифровые продукты надлежащего качества не производится после предоставления доступа.">Цифровые продукты (без возврата)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-prev" onclick="nextStep(1)">Назад</button>
+      <button class="btn-next" onclick="nextStep(3)">Далее</button>
+    </div>
+  </div>
+
+  <div class="step-card" id="step-3">
+    <h2>3. Аналитика и Данные</h2>
+    
+    <div class="form-group">
+      <label>Сторонние сервисы (локализованы в РФ)</label>
+      <div class="checkbox-grid">
+        <label class="checkbox-item">
+          <input type="checkbox" id="c_metrika" checked>
+          <span>Яндекс.Метрика</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="c_vk">
+          <span>Пиксель VK Рекламы</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="c_retarget">
+          <span>Ретаргетинг (показ рекламы догонялкой)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-prev" onclick="nextStep(2)">Назад</button>
+      <button class="btn-next" onclick="nextStep(4)">Завершить</button>
+    </div>
+  </div>
+
+  <div class="step-card" id="step-4">
+    <h2 style="text-align: center; margin-bottom: 8px;">🎉 Всё готово!</h2>
+    <p style="text-align: center; color: var(--text-sec); margin-bottom: 32px;">Ваши юридически чистые документы сформированы.</p>
+
+    <button class="btn-download primary" id="btn_privacy" onclick="generatePrivacy()">Скачать Политику конфиденциальности (.docx)</button>
+    <button class="btn-download" id="btn_tos" onclick="generateTOS()">Скачать Пользовательское соглашение (.docx)</button>
+    
+    <div style="margin-top: 32px; text-align: center;">
+      <button class="btn-prev" onclick="nextStep(3)">Вернуться назад</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// UX Логика
+document.getElementById('d_date').valueAsDate = new Date();
+
+document.querySelectorAll('.checkbox-item input').forEach(el => {
+  el.addEventListener('change', (e) => {
+    e.target.parentElement.classList.toggle('checked', e.target.checked);
+  });
+  if(el.checked) el.parentElement.classList.add('checked');
+});
+
+function togglePayments() {
+  document.getElementById('payment-block').style.display = document.getElementById('c_payments').checked ? 'block' : 'none';
+}
+
+function nextStep(step) {
+  document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+  document.getElementById(`step-${step}`).classList.add('active');
+  document.getElementById('progressBar').style.width = ((step - 1) / 3) * 100 + '%';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Сбор данных
+function getData() {
+  const rawDate = document.getElementById('d_date').value;
+  const fmtDate = rawDate ? rawDate.split('-').reverse().join('.') : '«___» ________ 202_ г.';
+  
+  return {
+    name: document.getElementById('d_name').value || '[НАИМЕНОВАНИЕ ВЛАДЕЛЬЦА]',
+    inn: document.getElementById('d_inn').value || '[ИНН]',
+    ogrn: document.getElementById('d_ogrn').value || '',
+    address: document.getElementById('d_address').value || '[АДРЕС]',
+    email: document.getElementById('d_email').value || '[EMAIL]',
+    phone: document.getElementById('d_phone').value || '',
+    url: document.getElementById('d_url').value || '[САЙТ]',
+    date: fmtDate,
+    offer: document.getElementById('d_offer').value || '[ОПИСАНИЕ УСЛУГ]',
+    
+    hasForms: document.getElementById('c_forms').checked,
+    hasAccount: document.getElementById('c_account').checked,
+    hasPayments: document.getElementById('c_payments').checked,
+    
+    gateway: document.getElementById('d_gateway').value || 'банковские карты',
+    refund: document.getElementById('d_refund').value,
+    
+    metrika: document.getElementById('c_metrika').checked,
+    vk: document.getElementById('c_vk').checked,
+    retarget: document.getElementById('c_retarget').checked
+  };
+}
+
+// DOCX Helpers (Настроены для идеальной генерации)
+const BORDER_STYLE = { style: docx.BorderStyle.SINGLE, size: 4, color: "000000" };
+const TABLE_BORDERS = { top: BORDER_STYLE, bottom: BORDER_STYLE, left: BORDER_STYLE, right: BORDER_STYLE, insideHorizontal: BORDER_STYLE, insideVertical: BORDER_STYLE };
+
+function p(text, opts={}) {
+  return new docx.Paragraph({
+    children: [new docx.TextRun({ text, bold: opts.bold, size: 22, font: "Arial" })],
+    spacing: opts.spacing || { before: 60, after: 60 },
+    alignment: opts.align
+  });
+}
+
+function h1(text) { return new docx.Paragraph({ children: [new docx.TextRun({ text, size: 28, bold: true, font: "Arial" })], spacing: { before: 200, after: 200 }, alignment: docx.AlignmentType.CENTER }); }
+function h2(text) { return new docx.Paragraph({ children: [new docx.TextRun({ text, size: 24, bold: true, font: "Arial" })], spacing: { before: 240, after: 120 } }); }
+function empty() { return new docx.Paragraph({ children: [new docx.TextRun({ text: "", size: 22 })] }); }
+
+function tCell(paragraphs, isHeader = false) {
+  return new docx.TableCell({
+    children: paragraphs,
+    shading: isHeader ? { fill: "F2F2F2" } : undefined,
+    margins: { top: 100, bottom: 100, left: 100, right: 100 }
+  });
+}
+
+// Генерация Политики
+async function generatePrivacy() {
+  const btn = document.getElementById('btn_privacy'); btn.disabled = true; btn.textContent = 'Генерация...';
+  const d = getData();
+
+  const tableRows = [];
+  tableRows.push(new docx.TableRow({ children: [
+    tCell([p("Категория субъектов", {bold: true})], true),
+    tCell([p("Состав данных", {bold: true})], true),
+    tCell([p("Цели обработки", {bold: true})], true),
+    tCell([p("Основание", {bold: true})], true)
+  ]}));
+
+  if (d.hasForms || (!d.hasForms && !d.hasAccount)) {
+    tableRows.push(new docx.TableRow({ children: [
+      tCell([p("Посетители, отправляющие заявки")]),
+      tCell([p("— Имя;\n— Телефон;\n— E-mail.")]),
+      tCell([p("Обратная связь, консультирование, расчет стоимости.")]),
+      tCell([p("Согласие Пользователя (п.1 ч.1 ст.6 ФЗ-152).")])
+    ]}));
+  }
+  
+  if (d.hasAccount) {
+    tableRows.push(new docx.TableRow({ children: [
+      tCell([p("Зарегистрированные пользователи")]),
+      tCell([p("— Имя;\n— E-mail;\n— Пароль (хеш).")]),
+      tCell([p("Предоставление доступа к личному кабинету.")]),
+      tCell([p("Исполнение договора (п.5 ч.1 ст.6 ФЗ-152).")])
+    ]}));
+  }
+
+  tableRows.push(new docx.TableRow({ children: [
+    tCell([p("Посетители Сайта (автосбор)")]),
+    tCell([p("— Данные cookie;\n— IP-адрес;\n— Данные устройства.")]),
+    tCell([p("Аналитика поведения, улучшение работы Сайта.")]),
+    tCell([p("Согласие Пользователя.")])
+  ]}));
+
+  const analytics = [];
+  if (d.metrika) analytics.push("Яндекс.Метрика");
+  if (d.vk) analytics.push("VK Реклама");
+
+  const children = [
+    h1('ПОЛИТИКА В ОТНОШЕНИИ ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ'),
+    p(`Сайт: ${d.url}`, { bold: true }), p(`Дата вступления в силу: ${d.date}`), empty(),
+
+    h2('1. ОБЩИЕ ПОЛОЖЕНИЯ'),
+    p(`1.1. Настоящая Политика разработана во исполнение требований ФЗ от 27.07.2006 № 152-ФЗ «О персональных данных» и определяет порядок обработки данных пользователей сайта ${d.url}.`),
+    p(`1.2. Оператором является: ${d.name} (далее — «Оператор»).`),
+    p('1.3. Использование любых форм на Сайте означает безоговорочное согласие Пользователя с настоящей Политикой.'), empty(),
+
+    h2('2. РЕКВИЗИТЫ ОПЕРАТОРА'),
+    p(`Наименование: ${d.name}`), p(`ИНН: ${d.inn}`),
+    d.ogrn ? p(`ОГРН/ОГРНИП: ${d.ogrn}`) : empty(),
+    p(`Адрес: ${d.address}`), p(`E-mail: ${d.email}`),
+    d.phone ? p(`Телефон: ${d.phone}`) : empty(), empty(),
+
+    h2('3. ЦЕЛИ И ОБЪЕМ ОБРАБОТКИ ДАННЫХ'),
+    new docx.Table({ rows: tableRows, width: { size: 100, type: docx.WidthType.PERCENTAGE }, borders: TABLE_BORDERS }), empty(),
+
+    h2('4. COOKIE И АНАЛИТИКА'),
+    p('4.1. Сайт использует файлы cookie и инструменты аналитики. Все данные обрабатываются на серверах в РФ. Трансграничная передача не осуществляется.'),
+    analytics.length > 0 ? p(`4.2. Подключенные сервисы: ${analytics.join(', ')}.`) : p('4.2. Сторонние аналитические сервисы не используются.'),
+    d.retarget ? p('4.3. На Сайте настроен ретаргетинг для показа релевантной рекламы в сетях Яндекс и/или VK.') : empty(), empty(),
+
+    h2('5. СРОКИ И ПОРЯДОК УНИЧТОЖЕНИЯ'),
+    p('5.1. Данные хранятся до достижения целей обработки или до момента отзыва согласия Пользователем.'),
+    p('5.2. При достижении целей Оператор уничтожает персональные данные без возможности восстановления в срок, не превышающий 30 дней.'), empty(),
+
+    h2('6. ПРАВА ПОЛЬЗОВАТЕЛЕЙ'),
+    p(`6.1. Пользователь может в любой момент отозвать свое согласие, направив уведомление на e-mail: ${d.email} с пометкой «Отзыв согласия».`),
+    p('6.2. Оператор обязан прекратить обработку данных в течение 10 рабочих дней с момента получения обращения.')
+  ];
+
+  await saveDocx(`Политика_конфиденциальности_${d.url}.docx`, children);
+  btn.textContent = 'Скачать Политику конфиденциальности (.docx)'; btn.disabled = false;
+  showToast('Политика конфиденциальности скачана!');
+}
+
+// Генерация Соглашения
+async function generateTOS() {
+  const btn = document.getElementById('btn_tos'); btn.disabled = true; btn.textContent = 'Генерация...';
+  const d = getData();
+
+  const children = [
+    h1('ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ (ПУБЛИЧНАЯ ОФЕРТА)'),
+    p(`Сайт: ${d.url}`, { bold: true }), p(`Дата вступления в силу: ${d.date}`), empty(),
+
+    h2('1. ОБЩИЕ ПОЛОЖЕНИЯ'),
+    p('1.1. Настоящее Соглашение представляет собой публичную оферту в соответствии со ст. 437 Гражданского кодекса РФ.'),
+    p(`1.2. Владельцем Сайта является: ${d.name} (далее — «Администрация»).`),
+    p('1.3. Акцептом оферты в соответствии со ст. 438 ГК РФ является любое использование Сайта, включая отправку веб-форм.'), empty(),
+
+    h2('2. ПРЕДМЕТ СОГЛАШЕНИЯ И УСЛУГИ'),
+    p(`2.1. Администрация предоставляет на Сайте информацию об услугах: ${d.offer}.`),
+    p('2.2. Информация об услугах, тарифах и сроках носит ознакомительный характер и не является окончательной (не обязывает Администрацию заключить договор на указанных условиях без подписания отдельного документа).'), empty(),
+
+    ...(d.hasPayments ? [
+      h2('3. ОПЛАТА И ВОЗВРАТЫ'),
+      p(`3.1. Оплата на сайте производится через: ${d.gateway}.`),
+      p(`3.2. ${d.refund}`), empty()
+    ] : []),
+
+    h2('4. ИНТЕЛЛЕКТУАЛЬНАЯ СОБСТВЕННОСТЬ'),
+    p('4.1. Все объекты на Сайте (дизайн, тексты, код, кейсы, логотипы) являются интеллектуальной собственностью Администрации.'),
+    p('4.2. Копирование, распространение или парсинг контента без письменного согласия Администрации строго запрещено и преследуется по закону (ст. 1252, 1301 ГК РФ).'), empty(),
+
+    h2('5. ОГРАНИЧЕНИЕ ОТВЕТСТВЕННОСТИ'),
+    p('5.1. Сайт предоставляется по принципу «как есть» (as is). Администрация не гарантирует бесперебойную работу, зависящую от интернет-провайдеров или хостинга.'),
+    p('5.2. Администрация не несет ответственности за убытки или упущенную выгоду Пользователя.'), empty(),
+
+    h2('6. РАЗРЕШЕНИЕ СПОРОВ'),
+    p('6.1. Все споры подлежат обязательному досудебному урегулированию. Срок ответа на письменную претензию — 15 рабочих дней.'),
+    p('6.2. При недостижении согласия спор передается на рассмотрение в суд по месту нахождения Администрации.'), empty(),
+
+    h2('7. РЕКВИЗИТЫ АДМИНИСТРАЦИИ'),
+    p(`${d.name}`), p(`ИНН: ${d.inn}`),
+    d.ogrn ? p(`ОГРН/ОГРНИП: ${d.ogrn}`) : empty(),
+    p(`Адрес: ${d.address}`), p(`E-mail: ${d.email}`)
+  ];
+
+  await saveDocx(`Пользовательское_соглашение_${d.url}.docx`, children);
+  btn.textContent = 'Скачать Пользовательское соглашение (.docx)'; btn.disabled = false;
+  showToast('Пользовательское соглашение скачано!');
+}
+
+async function saveDocx(filename, children) {
+  const doc = new docx.Document({
+    sections: [{ properties: { page: { margin: { top: 1440, right: 1134, bottom: 1440, left: 1700 } } }, children }]
+  });
+  const blob = await docx.Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
